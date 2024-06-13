@@ -101,10 +101,11 @@ async def login(user: User, response: Response, request: Request):
     existing_user = user_collection.find_one({"username": username})
     if existing_user == None or not passwords_match(password, existing_user["password"], existing_user["salt"]):
         response.status_code = 400
-        return {"message": "Incorrect credentials."}
+        return {"message": "incorrect credentials."}
 
     # check if user is already logged in
     if "user" in request.session:
+        response.status_code = 400
         return {"message": "user already signed in."}
 
     
@@ -113,5 +114,21 @@ async def login(user: User, response: Response, request: Request):
     return {"message": "user signed in."}
 
     
+@app.post("/logout", status_code=200)
+async def logout(username: str, response: Response, request: Request):
+    '''
+    Allows users to logout
 
-    
+    body:
+        username: username for the user to logout -> str
+    '''
+    if username == None or username == "":
+        response.status_code = 400
+        return {"message": "no username provided."}
+
+    if "user" not in request.session or request.session["user"] != username:
+        response.status_code = 400
+        return {"message": "user not logged in."}
+
+    del request.session["user"]
+    return {"message": "user logged out."}
