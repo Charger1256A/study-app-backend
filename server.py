@@ -115,20 +115,14 @@ async def login(user: User, response: Response, request: Request):
 
     
 @app.post("/logout", status_code=200)
-async def logout(username: str, response: Response, request: Request):
+async def logout(response: Response, request: Request):
     '''
     Allows users to logout
-
-    body:
-        username: username for the user to logout -> str
     '''
-    if username == None or username == "":
-        response.status_code = 400
-        return {"message": "no username provided."}
 
-    if "user" not in request.session or request.session["user"] != username:
+    if "user" not in request.session:
         response.status_code = 400
-        return {"message": "user not logged in."}
+        return {"message": "No user logged in."}
 
     del request.session["user"]
     return {"message": "user logged out."}
