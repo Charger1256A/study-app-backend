@@ -123,7 +123,7 @@ async def logout(response: Response, request: Request):
     del request.session["user"]
     return {"message": "user logged out."}
 
-@app.post("/create_deck", status_code=200)
+@app.post("/create-deck", status_code=200)
 async def create_deck(deck: Deck, response: Response, request: Request):
     '''
     Allows user to create a deck
