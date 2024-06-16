@@ -229,5 +229,31 @@ async def set_cards(cards: Cards, response: Response, request: Request):
 
     return { "message": "cards have been set." }
 
-    
+@app.get("/get-decks", status_code=200)
+async def get_decks(response: Response, request: Request):
+    '''
+    Allows users to get their decks
+    '''
+    # check if user is logged in
+    if "user" not in request.session:
+        response.status_code = 400
+        return {"message": "No user logged in."}
+
+    # get decks
+    user_id = request.session["user"]
+    users_collection = db["users"]
+    user = users_collection.find_one({ "_id": ObjectId(user_id) })
+    deck_ids = user["decks"]
+    decks_collection = db["decks"]
+    decks = []
+    for deck_id in deck_ids:
+        deck = decks_collection.find_one({ "_id": deck_id })
+        deck_obj = {
+            "id": str(deck_id),
+            "name": deck["name"],
+            "description": deck["description"],
+        }
+        decks.append(deck_obj)
+
+    return decks
 
