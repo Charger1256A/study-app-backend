@@ -9,9 +9,13 @@ import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from starlette.middleware.sessions import SessionMiddleware
+from typing import List
+from bson.objectid import ObjectId
+
 
 from body_schemas.user import User
 from body_schemas.deck import Deck
+from body_schemas.cards import Cards
 from utilities import hash_password, passwords_match
 
 load_dotenv()
@@ -57,7 +61,7 @@ async def signup(user: User, response: Response):
         return {"message": "username and password must exist."}
 
     # return bad status code if user already exists
-    existing_user = users_collection.find_one({"username": username})
+    existing_user = users_collection.find_one({ "username": username })
     if existing_user != None:
         response.status_code = 400
         return {"message": "user already has an account"}
@@ -93,7 +97,7 @@ async def login(user: User, response: Response, request: Request):
         return {"message": "username and password must exist."}
 
     # return bad status code if username or password do not match
-    existing_user = users_collection.find_one({"username": username})
+    existing_user = users_collection.find_one({ "username": username })
     if existing_user == None or not passwords_match(password, existing_user["password"], existing_user["salt"]):
         response.status_code = 400
         return {"message": "incorrect credentials."}
@@ -105,7 +109,7 @@ async def login(user: User, response: Response, request: Request):
 
     
     # store user in session 
-    request.session["user"] = existing_user["username"]
+    request.session["user"] = str(existing_user["_id"])
     return {"message": "user signed in."}
 
     
@@ -157,14 +161,73 @@ async def create_deck(deck: Deck, response: Response, request: Request):
 
     # add deck to user
     users_collection = db["users"]
-    username = request.session["user"]
+    user_id = request.session["user"]
     users_collection.update_one(
-        {"username": username},  # query
+        {"_id": ObjectId(user_id)},  # query
         {"$push": {"decks": deck_id}}  # update
     )
     return {"message": "deck created."}
 
+@app.post("/set-cards", status_code=200)
+async def set_cards(cards: Cards, response: Response, request: Request):
+    '''
+    Allows users to set cards in a deck.
+    '''
+    # check if user is logged in
+    if "user" not in request.session:
+        response.status_code = 400
+        return {"message": "No user logged in."}
 
+    # get data from body
+    deck_id = cards.deck_id
+    cards_list = cards.cards
+
+    # check if deck_id exists
+    if deck_id == "":
+        response.status_code = 400
+        return {"message": "Invalid Deck"}
+
+    # check if deck is created
+    decks_collection = db["decks"]
+    deck = None
+    try:
+        deck = decks_collection.find_one({ "_id": ObjectId(deck_id) })
+    except:
+        response.status_code = 400
+        return {"message": "Invalid Deck"}
+
+    # check if deck is current users deck
+    users_collection = db["users"]
+    user = users_collection.find_one({ "_id": ObjectId(request.session["user"]) })
+    if ObjectId(deck_id) not in user["decks"]:
+        response.status_code = 400
+        return {"message": "Invalid Deck"}
+
+    # remove all cards currently in deck
+    cards_collection = db["cards"]
+    cards_collection.delete_many({"deck_id": deck_id})
+
+    # inserts new ards into cards collection
+    parsed_cards_list = []
+    for card in cards_list:
+        cards_obj = {
+            "term": card.term,
+            "definition": card.definition,
+            "deck_id": deck_id,
+        }
+
+        parsed_cards_list.append(cards_obj)
+
+    card_ids = cards_collection.insert_many(parsed_cards_list).inserted_ids
+
+    # add new cards to deck collection
+    deck["cards"] = card_ids
+    decks_collection.update_one(
+        {"_id": ObjectId(deck['_id'])},  # filter
+        {"$set": {"cards": card_ids}}  # update
+    )
+
+    return { "message": "cards have been set." }
 
     
 
