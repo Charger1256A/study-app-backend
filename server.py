@@ -185,7 +185,7 @@ async def set_cards(cards: Cards, response: Response, request: Request):
     # check if deck_id exists
     if deck_id == "":
         response.status_code = 400
-        return {"message": "Invalid Deck"}
+        return {"message": "Invalid deck."}
 
     # check if deck is created
     decks_collection = db["decks"]
@@ -194,14 +194,14 @@ async def set_cards(cards: Cards, response: Response, request: Request):
         deck = decks_collection.find_one({ "_id": ObjectId(deck_id) })
     except:
         response.status_code = 400
-        return {"message": "Invalid Deck"}
+        return {"message": "Invalid deck."}
 
     # check if deck is current users deck
     users_collection = db["users"]
     user = users_collection.find_one({ "_id": ObjectId(request.session["user"]) })
     if ObjectId(deck_id) not in user["decks"]:
         response.status_code = 400
-        return {"message": "Invalid Deck"}
+        return {"message": "Invalid deck."}
 
     # remove all cards currently in deck
     cards_collection = db["cards"]
@@ -240,9 +240,9 @@ async def get_decks(response: Response, request: Request):
         return {"message": "No user logged in."}
 
     # get decks
-    user_id = request.session["user"]
+    user_id = ObjectId(request.session["user"])
     users_collection = db["users"]
-    user = users_collection.find_one({ "_id": ObjectId(user_id) })
+    user = users_collection.find_one({ "_id": user_id })
     deck_ids = user["decks"]
     decks_collection = db["decks"]
     decks = []
@@ -257,3 +257,46 @@ async def get_decks(response: Response, request: Request):
 
     return decks
 
+@app.get("/get-cards/{deck_id}", status_code=200)
+def get_cards(deck_id, response: Response, request: Request):
+    '''
+    Allows users to get cards for a deck
+    '''
+    # check if user is logged in
+    if "user" not in request.session:
+        response.status_code = 400
+        return {"message": "No user logged in."}
+    
+    try:
+        deck_id = ObjectId(deck_id)
+    except:
+        response.status_code = 400
+        return {"message": "Invalid deck."}
+
+    # check if deck is current users
+    user_id = ObjectId(request.session["user"])
+    users_collection = db["users"]
+    user = users_collection.find_one({ "_id": user_id })
+    deck_ids = user["decks"]
+    if deck_id not in deck_ids:
+        response.status_code = 400
+        return {"message": "Invalid deck."}
+
+    # get the deck
+    decks_collection = db["decks"]
+    deck = decks_collection.find_one({ "_id": deck_id })
+
+    # get each card
+    card_ids = deck["cards"]
+    cards_collection = db["cards"]
+    cards = []
+    for card_id in card_ids:
+        card = cards_collection.find_one({ "_id": card_id })
+        card["_id"] = str(card["_id"])
+        cards.append(card)
+
+    return cards
+    
+
+    
+    
