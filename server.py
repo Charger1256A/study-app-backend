@@ -33,6 +33,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",  # React app
+    "http://localhost:5173/login"
     # add any other origins that need to access your API
 ]
 
