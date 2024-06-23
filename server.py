@@ -33,6 +33,7 @@ app = FastAPI()
 
 origins = [
     "http://localhost:5173",  # React app
+    "https://study-app-frontend.vercel.app"
     # add any other origins that need to access your API
 ]
 
