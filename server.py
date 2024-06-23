@@ -11,6 +11,8 @@ from pymongo import MongoClient
 from starlette.middleware.sessions import SessionMiddleware
 from typing import List
 from bson.objectid import ObjectId
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 from body_schemas.user import User
@@ -28,6 +30,19 @@ client = MongoClient(CONNECTION_STRING)
 db = client["study-app"]
 
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",  # React app
+    # add any other origins that need to access your API
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # creates session
 SESSION_KEY = os.getenv("SESSION_KEY")
@@ -292,7 +307,8 @@ def get_cards(deck_id, response: Response, request: Request):
     cards = []
     for card_id in card_ids:
         card = cards_collection.find_one({ "_id": card_id })
-        card["_id"] = str(card["_id"])
+        card["id"] = str(card["_id"])
+        del card["_id"]
         cards.append(card)
 
     return cards
