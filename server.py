@@ -47,7 +47,7 @@ app.add_middleware(
 
 # creates session
 SESSION_KEY = os.getenv("SESSION_KEY")
-app.add_middleware(SessionMiddleware, secret_key=SESSION_KEY, same_site="None")
+app.add_middleware(SessionMiddleware, secret_key=SESSION_KEY,  https_only=True,  same_site="None")
 
 @app.get("/")
 async def root():
@@ -100,10 +100,10 @@ async def login(user: User, response: Response, request: Request):
     '''
     Allows users to login
     '''
-    print(request.cookies.get("session"))
     # gets data from body
     username = user.username
     password = user.password
+
 
     # gets user collection
     users_collection = db["users"]
@@ -119,15 +119,12 @@ async def login(user: User, response: Response, request: Request):
         response.status_code = 400
         return {"message": "incorrect credentials."}
 
-    print(request.session)
-
     # check if user is already logged in
     if "user" in request.session:
         response.status_code = 400
         return {"message": "user already signed in."}
 
-    
-    # store user in session 
+
     request.session["user"] = str(existing_user["_id"])
 
     return {"message": "user signed in."}
