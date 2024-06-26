@@ -58,7 +58,7 @@ async def root():
 
 
 @app.post("/signup", status_code=201)
-async def signup(user: User, response: Response):
+async def signup(user: User, response: Response, request: Request):
     '''
     Allows users to signup
     '''
@@ -90,7 +90,10 @@ async def signup(user: User, response: Response):
         "decks": [],
     }
     # inserts object into collection
-    users_collection.insert_one(new_user)
+    new_user = users_collection.insert_one(new_user)
+
+    # log user in
+    request.session["user"] = str(new_user.inserted_id)
 
     # TODO: return good status code if successful
     return {"message": "user successfully created."}
@@ -118,11 +121,6 @@ async def login(user: User, response: Response, request: Request):
     if existing_user == None or not passwords_match(password, existing_user["password"], existing_user["salt"]):
         response.status_code = 400
         return {"message": "incorrect credentials."}
-
-    # check if user is already logged in
-    if "user" in request.session:
-        response.status_code = 400
-        return {"message": "user already signed in."}
 
 
     request.session["user"] = str(existing_user["_id"])
