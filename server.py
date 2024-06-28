@@ -181,7 +181,7 @@ async def create_deck(deck: Deck, response: Response, request: Request):
         {"_id": ObjectId(user_id)},  # query
         {"$push": {"decks": deck_id}}  # update
     )
-    return {"message": "deck created."}
+    return {"message": "deck created.", "deck_id": str(deck_id)}
 
 @app.post("/set-cards", status_code=200)
 async def set_cards(cards: Cards, response: Response, request: Request):
