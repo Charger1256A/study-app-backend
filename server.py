@@ -311,7 +311,7 @@ def get_cards(deck_id, response: Response, request: Request):
         del card["_id"]
         cards.append(card)
 
-    return cards
+    return { "cards": cards, "deck_name": deck["name"], "deck_description": deck["description"] }
     
 
     
