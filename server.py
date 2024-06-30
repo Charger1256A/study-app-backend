@@ -308,7 +308,6 @@ def get_cards(deck_id, response: Response, request: Request):
     for card_id in card_ids:
         card = cards_collection.find_one({ "_id": card_id })
         card["id"] = str(card["_id"])
-        del card["_id"]
         cards.append(card)
 
     return { "cards": cards, "deck_name": deck["name"], "deck_description": deck["description"] }
