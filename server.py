@@ -222,7 +222,10 @@ async def set_cards(cards: Cards, response: Response, request: Request):
     cards_collection = db["cards"]
     cards_collection.delete_many({"deck_id": deck_id})
 
-    # inserts new ards into cards collection
+    if len(cards_list) == 0:
+        return { "message": "cards have been set." }
+
+    # inserts new cards into cards collection
     parsed_cards_list = []
     for card in cards_list:
         cards_obj = {
